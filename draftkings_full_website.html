@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>DraftKings League Tracker</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f8f8f8; }
+    header { background: #333; color: white; padding: 20px; text-align: center; }
+    nav { display: flex; flex-wrap: wrap; justify-content: center; background: #444; }
+    nav button { background: #555; color: white; border: none; padding: 10px 20px; margin: 5px; cursor: pointer; }
+    nav button.active { background: #00aaff; }
+    main { padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+    th, td { border: 1px solid #333; padding: 8px; text-align: center; }
+    th { background-color: #eee; }
+    canvas { max-width: 100%; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <h1>DraftKings League Tracker</h1>
+  </header>
+  <nav id="tabs">
+    <!-- Buttons will be injected here -->
+  </nav>
+  <main>
+    <div id="content">
+      <!-- Tables and charts go here -->
+    </div>
+  </main>
+
+  <script>
+    // List of tabs: first is Season Standings, rest are tournaments
+    const tabs = [
+      {name: 'Season Standings', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Season Standings'},
+      {name: 'Pebble Beach', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Pebble Beach'},
+      {name: 'Genesis', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Genesis'},
+      {name: 'Arnold Palmer', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Arnold Palmer'},
+      {name: 'The Players', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/The Players'},
+      {name: 'Masters', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Masters'},
+      {name: 'RBC Heritage', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/RBC Heritage'},
+      {name: 'Miami Championship', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Miami Championship'},
+      {name: 'Truist', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Truist'},
+      {name: 'PGA Championship', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/PGA Championship'},
+      {name: 'Memorial', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Memorial'},
+      {name: 'US Open', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/US Open'},
+      {name: 'Travelers', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Travelers'},
+      {name: 'Open Championship', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Open Championship'}
+    ];
+
+    const tabsContainer = document.getElementById('tabs');
+    const contentContainer = document.getElementById('content');
+
+    // Create buttons for tabs
+    tabs.forEach((tab, index) => {
+      const btn = document.createElement('button');
+      btn.textContent = tab.name;
+      if(index === 0) btn.classList.add('active');
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        loadTab(tab);
+      });
+      tabsContainer.appendChild(btn);
+    });
+
+    // Function to load a tab
+    function loadTab(tab) {
+      contentContainer.innerHTML = '<p>Loading...</p>';
+      fetch(tab.url)
+        .then(res => res.json())
+        .then(data => {
+          if(tab.name === 'Season Standings') {
+            renderTable(data);
+          } else {
+            renderTournament(data, tab.name);
+          }
+        })
+        .catch(err => contentContainer.innerHTML = '<p>Error loading data</p>');
+    }
+
+    function renderTable(data) {
+      if(!data || data.length === 0){ contentContainer.innerHTML = '<p>No data yet.</p>'; return; }
+      let html = '<table><thead><tr>';
+      Object.keys(data[0]).forEach(col => html += `<th>${col}</th>`);
+      html += '</tr></thead><tbody>';
+      data.forEach(row => {
+        html += '<tr>' + Object.values(row).map(val => `<td>${val}</td>`).join('') + '</tr>';
+      });
+      html += '</tbody></table>';
+      contentContainer.innerHTML = html;
+    }
+
+    function renderTournament(data, name) {
+      renderTable(data);
+      if(!data || data.length === 0) return;
+      const labels = data.map(d => d['Name']);
+      const pointsKey = Object.keys(data[0]).find(k => k.toLowerCase().includes('points')) || Object.keys(data[0])[2];
+      const points = data.map(d => parseFloat(d[pointsKey]) || 0);
+      const canvas = document.createElement('canvas');
+      contentContainer.appendChild(canvas);
+      new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{ label: `${name} Points`, data: points, backgroundColor: 'rgba(0,170,255,0.6)' }]
+        },
+        options: { scales: { y: { beginAtZero: true } } }
+      });
+    }
+
+    loadTab(tabs[0]);
+  </script>
+</body>
+</html>
