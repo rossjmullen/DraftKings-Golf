@@ -1,136 +1,148 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>DraftKings League Tracker</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f8f8f8; }
-    header { background: #333; color: white; padding: 20px; text-align: center; }
-    main { padding: 20px; }
-    select { padding: 10px; font-size: 16px; margin-bottom: 20px; }
-    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
-    th, td { border: 1px solid #333; padding: 8px; text-align: center; }
-    th { background-color: #eee; }
-    canvas { max-width: 100%; }
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8">
+<title>DraftKings Golf League</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
+}
+
+h1, h2 {
+    text-align: center;
+}
+
+select {
+    padding: 8px;
+    font-size: 16px;
+    margin-bottom: 15px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: center;
+}
+
+th {
+    background: #f2f2f2;
+}
+</style>
 </head>
 <body>
-  <header>
-    <h1>DraftKings League Tracker</h1>
-  </header>
 
-  <main>
-    <label for="tournamentSelect">Select Tournament:</label>
-    <select id="tournamentSelect"></select>
-    <div id="content"></div>
-  </main>
+<h1>DraftKings Golf League</h1>
 
-  <script>
-    const tabs = [
-      {name: 'Season Standings', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Season Standings'},
-      {name: 'Pebble Beach', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Pebble Beach'},
-      {name: 'Genesis', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Genesis'},
-      {name: 'Arnold Palmer', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Arnold Palmer'},
-      {name: 'The Players', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/The Players'},
-      {name: 'Masters', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Masters'},
-      {name: 'RBC Heritage', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/RBC Heritage'},
-      {name: 'Miami Championship', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Miami Championship'},
-      {name: 'Truist', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Truist'},
-      {name: 'PGA Championship', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/PGA Championship'},
-      {name: 'Memorial', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Memorial'},
-      {name: 'US Open', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/US Open'},
-      {name: 'Travelers', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Travelers'},
-      {name: 'Open Championship', url: 'https://opensheet.elk.sh/1FFfF4GoYs4jPAchnh92aUWuPzTDA-0d10pun0NOpX-U/Open Championship'}
-    ];
+<h2>Season Standings</h2>
+<table id="seasonTable"></table>
 
-    const select = document.getElementById('tournamentSelect');
-    const contentContainer = document.getElementById('content');
+<h2>Tournaments</h2>
+<select id="tournamentSelect"></select>
+<table id="tournamentTable"></table>
 
-    tabs.forEach(tab => {
-      const option = document.createElement('option');
-      option.value = tab.url;
-      option.textContent = tab.name;
-      select.appendChild(option);
+<script>
+const SHEET_ID = "YOUR_SHEET_ID";
+
+const events = [
+"Pebble Beach",
+"Genesis",
+"Arnold Palmer",
+"The Players",
+"Masters",
+"RBC Heritage",
+"Miami Championship",
+"Truist",
+"PGA Championship",
+"Memorial",
+"US Open",
+"Travelers",
+"Open Championship"
+];
+
+function sheetURL(sheet){
+    return `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(sheet)}`;
+}
+
+async function loadSeasonStandings(){
+    const res = await fetch(sheetURL("Season Standings"));
+    const data = await res.json();
+
+    let html = `<tr>
+        <th>Place</th>
+        <th>Name</th>
+        <th>Points For</th>
+        <th>DK Points</th>
+        <th>Money Won</th>
+    </tr>`;
+
+    data.forEach(r=>{
+        html += `<tr>
+            <td>${r.Place}</td>
+            <td>${r.Name}</td>
+            <td>${r["Points For"]}</td>
+            <td>${r["DK Points"]}</td>
+            <td>$${r["Money Won"]}</td>
+        </tr>`;
     });
 
-    select.addEventListener('change', () => {
-      const selectedTab = tabs.find(t => t.url === select.value);
-      loadTab(selectedTab);
+    document.getElementById("seasonTable").innerHTML = html;
+}
+
+async function loadTournament(name){
+    const res = await fetch(sheetURL(name));
+    let data = await res.json();
+
+    // Sort by DK Points descending
+    data.sort((a,b)=>Number(b["DK Points"]) - Number(a["DK Points"]));
+
+    let html = `<tr>
+        <th>Name</th>
+        <th>DK Points</th>
+        <th>Place</th>
+        <th>Points For</th>
+    </tr>`;
+
+    data.forEach(r=>{
+        html += `<tr>
+            <td>${r.Name}</td>
+            <td>${r["DK Points"]}</td>
+            <td>${r.Place}</td>
+            <td>${r["Points For"]}</td>
+        </tr>`;
     });
 
-    function loadTab(tab) {
-      contentContainer.innerHTML = '<p>Loading...</p>';
-      fetch(tab.url)
-        .then(res => res.json())
-        .then(data => {
-          if(tab.name === 'Season Standings') {
-            renderTable(data);
-            renderSeasonStandingsChart();
-          } else {
-            renderTable(data);
-            renderTournamentChart(data, tab.name);
-          }
-        })
-        .catch(err => contentContainer.innerHTML = '<p>Error loading data</p>');
-    }
+    document.getElementById("tournamentTable").innerHTML = html;
+}
 
-    function renderTable(data) {
-      if(!data || data.length === 0){ contentContainer.innerHTML = '<p>No data yet.</p>'; return; }
-      let html = '<table><thead><tr>';
-      Object.keys(data[0]).forEach(col => html += `<th>${col}</th>`);
-      html += '</tr></thead><tbody>';
-      data.forEach(row => {
-        html += '<tr>' + Object.values(row).map(val => `<td>${val}</td>`).join('') + '</tr>';
-      });
-      html += '</tbody></table>';
-      contentContainer.innerHTML = html;
-    }
+function buildDropdown(){
+    const select = document.getElementById("tournamentSelect");
 
-    function renderTournamentChart(data, name) {
-      if(!data || data.length === 0) return;
-      const labels = data.map(d => d['Name']);
-      const pointsKey = Object.keys(data[0]).find(k => k.toLowerCase().includes('points')) || Object.keys(data[0])[2];
-      const points = data.map(d => parseFloat(d[pointsKey]) || 0);
-      const canvas = document.createElement('canvas');
-      contentContainer.appendChild(canvas);
-      new Chart(canvas.getContext('2d'), {
-        type: 'bar',
-        data: { labels: labels, datasets: [{ label: `${name} Points`, data: points, backgroundColor: 'rgba(0,170,255,0.6)' }] },
-        options: { scales: { y: { beginAtZero: true } } }
-      });
-    }
+    events.forEach(e=>{
+        const opt = document.createElement("option");
+        opt.value = e;
+        opt.textContent = e;
+        select.appendChild(opt);
+    });
 
-    function renderSeasonStandingsChart() {
-      const tournamentTabs = tabs.slice(1);
-      const players = [];
-      const datasets = [];
-      const promises = tournamentTabs.map(t => fetch(t.url).then(res => res.json()));
+    select.addEventListener("change",()=>{
+        loadTournament(select.value);
+    });
 
-      Promise.all(promises).then(allData => {
-        allData.forEach(data => { data.forEach(row => { if(!players.includes(row['Name'])) players.push(row['Name']); }); });
-        tournamentTabs.forEach((tab, i) => {
-          const data = allData[i];
-          const points = players.map(p => {
-            const row = data.find(r => r['Name'] === p);
-            const pointsKey = Object.keys(row || {}).find(k => k.toLowerCase().includes('points'));
-            return row ? parseFloat(row[pointsKey]) || 0 : 0;
-          });
-          datasets.push({ label: tab.name, data: points, backgroundColor: `hsl(${i*25}, 70%, 50%)` });
-        });
+    loadTournament(events[0]);
+}
 
-        const canvas = document.createElement('canvas');
-        contentContainer.appendChild(canvas);
-        new Chart(canvas.getContext('2d'), {
-          type: 'bar',
-          data: { labels: players, datasets: datasets },
-          options: { scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }, plugins: { legend: { position: 'top' } } }
-        });
-      });
-    }
+loadSeasonStandings();
+buildDropdown();
+</script>
 
-    select.value = tabs[0].url;
-    loadTab(tabs[0]);
-  </script>
 </body>
 </html>
